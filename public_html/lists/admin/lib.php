@@ -292,7 +292,7 @@ function loadMessageData($msgid)
 
         //# can't do "ungreedy matching, in case the URL has placeholders, but this can potentially
         //# throw problems
-        if (preg_match('/\[URL:(.*)\]/i', $messagedata['message'], $regs)) {
+        if (!empty($messagedata['message']) && preg_match('/\[URL:(.*)\]/i', $messagedata['message'], $regs)) {
             $messagedata['sendurl'] = $regs[1];
         }
     }
@@ -959,7 +959,9 @@ function getPageLock($force = 0)
                 cl_output($GLOBALS['I18N']->get('Running commandline, quitting. We\'ll find out what to do in the next run.'));
                 exit;
             }
-            output($GLOBALS['I18N']->get('Sleeping for 20 seconds, aborting will quit'), 0);
+            if (function_exists('output')) {
+                output($GLOBALS['I18N']->get('Sleeping for 20 seconds, aborting will quit'), 0);
+            }
             flush();
             $abort = ignore_user_abort(0);
             sleep(20);
@@ -967,9 +969,9 @@ function getPageLock($force = 0)
         ++$waited;
         if ($waited > 10) {
             // we have waited 10 cycles, abort and quit script
-            output($GLOBALS['I18N']->get('We have been waiting too long, I guess the other process is still going ok'),
-                0);
-
+            if (function_exists('output')) {
+                output($GLOBALS['I18N']->get('We have been waiting too long, I guess the other process is still going ok'), 0);
+            }
             return false;
         }
         $running_req = Sql_query('select now() - modified,id from '.$tables['sendprocess']." where page = \"$thispage\" and alive order by started desc");
@@ -1971,15 +1973,36 @@ if (!function_exists('mb_strlen')) {
  * mostly used for columns in listings to retrict the width, particularly on mobile devices
  * it will show the full text as the title tip but restrict the size of the output
  *
- * will also place a space after / and @ to facilitate wrapping in the browser
- *
  */
 function shortenTextDisplay($text, $max = 30)
 {
+    $display = shortenText($text, $max);
+
+    return sprintf('<span title="%s">%s</span>', htmlspecialchars($text), $display);
+}
+/*
+ * shortenEmailDisplay
+ *
+ * Similar to shortenTextDisplay() but adds a wbr element after @ to allow wrapping
+ */
+function shortenEmailDisplay($text, $max = 30)
+{
+    $display = shortenText($text, $max);
+    $display = str_replace('@', '@<wbr>', $display);
+
+    return sprintf('<span title="%s">%s</span>', htmlspecialchars($text), $display);
+}
+
+/*
+ * shortenUrlDisplay
+ *
+ * Similar to shortenTextDisplay() but adds a wbr element after each / to allow wrapping
+ */
+function shortenUrlDisplay($text, $max = 30)
+{
     $display = preg_replace('!^https?://!i', '', $text);
     $display = shortenText($display, $max);
-    $display = str_replace('/', '/&#x200b;', $display);
-    $display = str_replace('@', '@&#x200b;', $display);
+    $display = str_replace('/', '/<wbr>', $display);
 
     return sprintf('<span title="%s">%s</span>', htmlspecialchars($text), $display);
 }
@@ -2385,6 +2408,7 @@ function asyncLoadContentDiv($url,$divname)
         if (typeof asyncLoadDiv == "undefined") {
             var asyncLoadDiv = new Array();
             var asyncLoadUrl = new Array();
+            var asyncRequestInterval = ' . ASYNC_REQUEST_INTERVAL . ';
         }
         asyncLoadDiv[asyncLoadDiv.length] = "'.$divname.'";
         asyncLoadUrl[asyncLoadUrl.length] = "'.$url.'";
@@ -2453,7 +2477,11 @@ function getClientIP()
         }
     }
 
-    $the_ip = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP);
+    if (isset($_SERVER['REMOTE_ADDR'])) {
+        $the_ip = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP);
+    } else {
+        $the_ip = '';
+    }
     //logEvent("REMOTE_ADDR ip=".$the_ip);
 
     return $the_ip;
