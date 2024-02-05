@@ -137,6 +137,18 @@ $bounce_unsubscribe_threshold = 5;
 // Set to 0 to received by mail bounce deletions in the advanced bounce processing report
 define('REPORT_DELETED_BOUNCES', 0);
 
+// The name of the POP3 mailbox
+// Multiple mailboxes can be specified separated by comma
+$bounce_mailbox_name = 'INBOX';
+
+// The maximum number of bounces to retrieve from the mailbox
+// This might need to be reduced if the processing times-out
+$bounce_mailbox_maximum = 100000;
+
+// When applying bounce rules the number of bounces to process in each batch
+// This might need to be reduced when there are a large number of bounces to process
+$bounce_rules_batch_size = 500;
+
 /*
 
 =========================================================================
@@ -893,7 +905,7 @@ define('ALLOW_UPDATER', true);
 // adds constant to email headers
 define('GOOGLE_SENDERID', '');
 
-// For ajax based signup forms (https://discuss.phplist.org/t/solved-ajax-subscribe-api/974) the access-control-allow-origin header 
+// For ajax based signup forms (https://discuss.phplist.org/t/solved-ajax-subscribe-api/974) the access-control-allow-origin header
 // has to be set properly.
 // Add the addresses of the websites you want to allow to perform ajax requests to PHPList.
 define('ACCESS_CONTROL_ALLOW_ORIGINS', ['https://example.com','https://example.org']);
@@ -901,10 +913,14 @@ define('ACCESS_CONTROL_ALLOW_ORIGINS', ['https://example.com','https://example.o
 // when using Mysql, what engine should we use
 // there is no need to set this, when you have a valid engine defined in your Mysql server settings
 // If you set this, the next time upgrade is run on commandline, the system will attempt to change all tables to this engine.
-// this is useful for old systems that have been created 
+// this is useful for old systems that have been created
 // for valid engines, check your server documentation (MariaDB or Mysql)
 // Warning, setting this value incorrectly will cause your database creation to break
 // the current value is a sensible one to use. It is advised not to change this.
-// if you are on a shared hosting environment, make sure you have the database permissions to update the 
+// if you are on a shared hosting environment, make sure you have the database permissions to update the
 // information.schema tables.
 $mysql_database_engine = 'InnoDB';
+
+// The subscriber totals for each list on the lists page are calculated by sending a sequence of asynchronous requests.
+// You can include a delay between requests using this setting. The value is in milliseconds.
+define('ASYNC_REQUEST_INTERVAL', 0);
